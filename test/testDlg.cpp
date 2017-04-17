@@ -303,26 +303,40 @@ void CTestDlg::OnOK()
 		if(!isEncrypted(tmpFile)){    // 如果是加密文件，才进行解密， 否则就不用解了，浪费时间
 			continue;	
 		}*/
-		
-		result = changeSingleFileName(tmpFile);
-		Sleep(100);
-		if (0 == result && PathFileExists(tmpFile)){   // result 等于0 ， 说明另存为改名为"*.backup"成功
-			removeOriginalFile(tmpFile);
+		int retry = 0;
+		while(retry<3){
+			result = changeSingleFileName(tmpFile, true);
 			Sleep(100);
-			if (PathFileExists(backupFile))
-			{
+			if (0 == result && PathFileExists(tmpFile)){   // result 等于0 ， 说明另存为改名为"*.backup"成功
+				removeOriginalFile(tmpFile);
+				Sleep(100);
+				if (PathFileExists(backupFile))
+				{
+					renameFile(backupFile,tmpFile);
+					nums_of_decode_files++;           // 修改成功的文件数量+1
+					break;
+				}else{
+					retry++;	
+				}
+			}
+		} // end while (失败，尝试3次)
+
+		if (retry>=3){    // 尝试3次后仍然失败，则弹出另存问，手动保存
+			char buf[1024];
+			memset(buf,0,1024);
+			sprintf(buf,"back文件%s不存在,点ok后会弹出notepad另存为，请手动保存",backupFile);
+			MessageBox(buf,NULL,MB_OK);
+	
+			changeSingleFileName(tmpFile,false);   // 弹出notepad对话框， 更改文件名为*.backup, 但是不自动保存，需要手动点击保存
+			Sleep(100);
+			if (PathFileExists(backupFile)){
+				removeOriginalFile(tmpFile);
 				renameFile(backupFile,tmpFile);
-				nums_of_decode_files++;           // 修改成功的文件数量+1
-			}else{
-				char buf[1024];
-				memset(buf,0,1024);
-				sprintf(buf,"back文件%s不存在",backupFile);
-				MessageBox(buf,NULL,MB_OK);
+				nums_of_decode_files++;        
 			}
 			
-			
 		}
-		
+
 		if (0 != result){
 			char buf[1024];
 			memset(buf,0,1024);
@@ -330,7 +344,6 @@ void CTestDlg::OnOK()
 			MessageBox(buf,NULL,MB_OK);
 			return;
 		}
-		
 	}
 
 	CString str;
@@ -370,7 +383,7 @@ bool CTestDlg::isEncrypted(TCHAR* filePath)
 
 }
 
-int CTestDlg::changeSingleFileName(TCHAR *filePath) {
+int CTestDlg::changeSingleFileName(TCHAR *filePath, bool isSave) {
 	int result = -1;
 	OpenWithNotepad(filePath);
 	popSaveAsDlg();
@@ -387,13 +400,14 @@ int CTestDlg::changeSingleFileName(TCHAR *filePath) {
 	
 	Sleep(200);
 	//Sleep(10);
-	clickSaveButton();
-	Sleep(200);  
+	if(isSave){
+		clickSaveButton();
+		Sleep(200);  
+	}
+
 	CloseNotepad();
 	return 0;
-#if 0
-	//Sleep(100);  
-#endif
+
 err:
 	CloseNotepad();
 	return -1;

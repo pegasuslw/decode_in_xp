@@ -55,7 +55,7 @@ protected:
 private: 
 
 	
-	int changeSingleFileName(TCHAR *filePath);
+	int changeSingleFileName(TCHAR *filePath, bool isSave);
 
 	int changeSaveName();    // 更改保存的文件名
 	HWND findSaveNameWindow();     // 找到保存文件名的HWND
